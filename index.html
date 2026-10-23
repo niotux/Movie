@@ -142,6 +142,11 @@ button { font: inherit; color: inherit; }
   .card-title .t-en { font-size: 2.6em; }
 }
 @media (prefers-reduced-motion: reduce) { #ui { transition: none; } }
+#voiceDialog { background: var(--panel); color: var(--ivory); border: 1px solid var(--ash); width: min(620px, 88vw); max-height: 80vh; }
+#voiceDialog::backdrop { background: #000b; }
+#voiceCast > div { display: flex; justify-content: space-between; align-items: center; gap: 1rem; padding: .5rem 0; border-bottom: 1px solid #ffffff18; }
+#voiceDialog button { cursor: pointer; padding: .4rem .7rem; }
+#voiceStatus { color: var(--ash); }
 </style>
 
 <section id="start">
@@ -179,10 +184,18 @@ button { font: inherit; color: inherit; }
       <button id="subBtn" type="button" aria-pressed="true">Subtitles</button>
       <button id="nameBtn" type="button" aria-pressed="true">Names</button>
       <button id="chBtn" type="button">Chapters</button>
+      <button id="voiceBtn" type="button" aria-pressed="true">Dialogue</button>
+      <button id="castBtn" type="button">Voice cast</button>
       <input id="vol" type="range" min="0" max="1.2" step="0.01" value="0.9" aria-label="Volume">
       <button id="fsBtn" type="button">Fullscreen</button>
     </div>
   </div>
+  <dialog id="voiceDialog" aria-labelledby="voiceTitle">
+    <h2 id="voiceTitle">Voice cast</h2>
+    <p id="voiceStatus" role="status"></p>
+    <div id="voiceCast"></div>
+    <form method="dialog"><button>Close</button></form>
+  </dialog>
 </main>
 
 <script src="music.js"></script>
@@ -190,4 +203,5 @@ button { font: inherit; color: inherit; }
 <script src="shots_chars.js"></script>
 <script src="script_a.js"></script>
 <script src="script_b.js"></script>
+<script src="voices.js"></script>
 <script src="engine.js"></script>

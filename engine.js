@@ -4,6 +4,7 @@
 
   var SHOTS = window.LD_SHOTS || {};
   var MUSIC = window.LD_MUSIC || null;
+  var VOICES = window.LD_VOICES;
   var FADE = 0.9; // seconds of black at each scene boundary (out + in)
 
   // ---------- timeline ----------
@@ -325,6 +326,7 @@
         fireEvents(sc, prevT - sc.start, state.T - sc.start);
       }
       if (MUSIC && MUSIC.update) safe(function () { MUSIC.update(state.T - sc.start); });
+      if (VOICES) VOICES.update(sc, state.T - sc.start);
       if (state.T >= total) { state.playing = false; showUI(true); state.T = total; }
       if (now - lastPersist > 3000) { lastPersist = now; persist(); }
     }
@@ -347,6 +349,7 @@
     });
   }
   function seek(T) {
+    if (VOICES) VOICES.stop();
     state.T = Math.max(0, Math.min(total - 0.01, T));
     state.sceneIdx = sceneAt(state.T);
     // undefined, not null: null means "nothing showing" and would skip clearing a stale card
@@ -362,7 +365,7 @@
     if (audioCtx && audioCtx.state === 'suspended') audioCtx.resume();
     scheduleHide();
   }
-  function pause() { state.playing = false; if (audioCtx) audioCtx.suspend(); showUI(true); persist(); }
+  function pause() { state.playing = false; if (VOICES) VOICES.stop(); if (audioCtx) audioCtx.suspend(); showUI(true); persist(); }
   function toggle() { state.playing ? pause() : play(); }
 
   var hideTimer = null;
@@ -420,6 +423,17 @@
   $('back').addEventListener('click', function () { seek(state.T - 10); });
   $('fwd').addEventListener('click', function () { seek(state.T + 10); });
   $('chBtn').addEventListener('click', function () { chaptersEl.classList.toggle('open'); showUI(true); });
+  $('voiceBtn').addEventListener('click', function () {
+    var enabled = this.getAttribute('aria-pressed') !== 'true';
+    this.setAttribute('aria-pressed', enabled);
+    if (VOICES) VOICES.enable(enabled);
+  });
+  $('castBtn').addEventListener('click', function () {
+    pause();
+    if (VOICES) VOICES.refresh();
+    $('voiceDialog').showModal();
+  });
+  $('voiceDialog').addEventListener('close', function () { if (VOICES) VOICES.stop(); });
   $('subBtn').addEventListener('click', function () { state.subs = !state.subs; lastSubKey = null; syncToggles(); persist(); });
   $('nameBtn').addEventListener('click', function () { state.names = !state.names; lastSubKey = null; syncToggles(); persist(); });
   $('fsBtn').addEventListener('click', function () {
@@ -428,7 +442,11 @@
       else stage.requestFullscreen().catch(function () {});
     } catch (e) {}
   });
-  $('vol').addEventListener('input', function (e) { if (master) master.gain.value = parseFloat(e.target.value); });
+  $('vol').addEventListener('input', function (e) {
+    var value = parseFloat(e.target.value);
+    if (master) master.gain.value = value;
+    if (VOICES) VOICES.volume(value);
+  });
   function syncToggles() {
     $('subBtn').setAttribute('aria-pressed', state.subs);
     $('nameBtn').setAttribute('aria-pressed', state.names);
@@ -440,7 +458,7 @@
     toggle();
   });
   document.addEventListener('keydown', function (e) {
-    if (!state.started || e.target.tagName === 'INPUT') return;
+    if (!state.started || e.target.tagName === 'INPUT' || $('voiceDialog').open) return;
     var k = e.key;
     if (k === ' ' || k === 'k') { e.preventDefault(); toggle(); }
     else if (k === 'ArrowLeft') seek(state.T - 10);
